@@ -4,6 +4,8 @@ A utility for splitting paired FASTQ files at the N-th position.
 
 ## Quick introduction
 
+**Note:** your FASTQ files need to be in the same order. For example: if first read from R1 file is the _@aaaa/1_, then the first read from R2 need to be the _@aaaa/2_.
+
 ```sh
 # ----- Inspect input data -----
 $ zcat data/test_r1.fq.gz | head
@@ -35,7 +37,7 @@ $ zcat test_end_R1.fq.gz | head -n 4
 ## :floppy_disk: Install
 
 Download the binary file from github releases. Then you can:
-1. Call it from where you saved.
+1. Call it from where you decompressed the .tar.gz of github release.
 
     Example: `/home/userName/Downloads/fq-spliter -r1 r1.fq.gz -r2 r2.fq.gz`
 
