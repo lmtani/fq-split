@@ -112,7 +112,7 @@ func writeRead(r read, w io.Writer, wg *sync.WaitGroup) {
 }
 
 func main() {
-
+	// CLI setup
 	flag.Usage = func() {
 		w := flag.CommandLine.Output() // may be os.Stderr - but not necessarily
 
@@ -123,14 +123,13 @@ func main() {
 		fmt.Fprintf(w, "\nExample: fq-split -r1 example/test_r1.fq.gz -r2 example/test_r2.fq.gz -n 10 \n")
 
 	}
-
 	r1Path := flag.String("r1", "", "Path for your R1 FASTQ file")
 	r2Path := flag.String("r2", "", "Path for your R2 FASTQ file")
 	n := flag.Int("n", 0, "Position to split your read. Ex: n=3, seq=AAATTTTT would give AAA and TTTTT.")
-	nameBegin := flag.String("name-begin", "begin", "Output basename for the first bases file")
-	nameEnd := flag.String("name-end", "end", "Output basename for the first bases file")
+	out := flag.String("out", "test-1", "Output basename for the first bases file")
 	flag.Parse()
 
+	// Input validation
 	if *r1Path == "" || *r2Path == "" {
 		log.Fatalln("Need to provide R1 and R2 fastq files. Ex: foo_R1.fq.gz and foo_R2.fq.gz")
 	}
@@ -139,10 +138,10 @@ func main() {
 	}
 
 	// Initialize writers
-	beginNameR1 := *nameBegin + "_R1.fq.gz"
-	beginNameR2 := *nameBegin + "_R2.fq.gz"
-	endNameR1 := *nameEnd + "_R1.fq.gz"
-	endNameR2 := *nameEnd + "_R2.fq.gz"
+	beginNameR1 := *out + "_begin_R1.fq.gz"
+	beginNameR2 := *out + "_begin_R2.fq.gz"
+	endNameR1 := *out + "_end_R1.fq.gz"
+	endNameR2 := *out + "_end_R2.fq.gz"
 
 	// Output file of the beginning of reads, R1
 	f1, err := os.OpenFile(beginNameR1, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
