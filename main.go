@@ -29,6 +29,12 @@ type fqWriter struct {
 	EndR2   io.Writer
 }
 
+type fqBufferedWriter struct {
+	f    *os.File
+	gz   *gzip.Writer
+	buff *bufio.Writer
+}
+
 func reader(path string, out chan<- read) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -138,53 +144,31 @@ func main() {
 	}
 
 	// Initialize writers
-	beginNameR1 := *out + "_begin_R1.fq.gz"
-	beginNameR2 := *out + "_begin_R2.fq.gz"
-	endNameR1 := *out + "_end_R1.fq.gz"
-	endNameR2 := *out + "_end_R2.fq.gz"
+	b1 := newFqBufferedWriter(*out + "_begin_R1.fq.gz")
+	b2 := newFqBufferedWriter(*out + "_begin_R2.fq.gz")
+	b3 := newFqBufferedWriter(*out + "_end_R1.fq.gz")
+	b4 := newFqBufferedWriter(*out + "_end_R2.fq.gz")
 
-	// Output file of the beginning of reads, R1
+	split(r1Path, r2Path, n, b1.buff, b2.buff, b3.buff, b4.buff)
+
+	b1.buff.Flush()
+	b2.buff.Flush()
+	b3.buff.Flush()
+	b4.buff.Flush()
+}
+
+func newFqBufferedWriter(beginNameR1 string) *fqBufferedWriter {
 	f1, err := os.OpenFile(beginNameR1, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
 	if err != nil {
 		log.Fatalln(err)
 	}
 	gz1 := gzip.NewWriter(f1)
 	b1 := bufio.NewWriter(gz1)
-	defer f1.Close()
-	defer gz1.Close()
+	return &fqBufferedWriter{buff: b1, gz: gz1, f: f1}
+}
 
-	// Output file of the beginning of reads, R2
-	f2, err := os.OpenFile(beginNameR2, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	gz2 := gzip.NewWriter(f2)
-	b2 := bufio.NewWriter(gz2)
-	defer f2.Close()
-	defer gz2.Close()
-
-	// Output file of the end of reads, R1
-	f3, err := os.OpenFile(endNameR1, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	gz3 := gzip.NewWriter(f3)
-	b3 := bufio.NewWriter(gz3)
-	defer f3.Close()
-	defer gz3.Close()
-
-	// Output file of the end of reads, R1
-	f4, err := os.OpenFile(endNameR2, os.O_APPEND|os.O_WRONLY|os.O_CREATE, 0644)
-	if err != nil {
-		log.Fatalln(err)
-	}
-	gz4 := gzip.NewWriter(f4)
-	b4 := bufio.NewWriter(gz4)
-	defer f4.Close()
-	defer gz4.Close()
-
-	w := fqWriter{beginR1: b1, beginR2: b2, EndR1: b3, EndR2: b4}
-
+func split(r1Path, r2Path *string, n *int, beginR1, beginR2, endR1, EndR2 io.Writer) {
+	w := fqWriter{beginR1: beginR1, beginR2: beginR2, EndR1: endR1, EndR2: EndR2}
 	// Running
 	r1 := make(chan read)
 	r2 := make(chan read)
@@ -195,8 +179,4 @@ func main() {
 	go splitter(r1, r2, pairs, *n)
 
 	writer(pairs, &w)
-	b1.Flush()
-	b2.Flush()
-	b3.Flush()
-	b4.Flush()
 }
