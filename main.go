@@ -22,13 +22,6 @@ type pair struct {
 	r1, r2 read
 }
 
-type fqWriter struct {
-	beginR1 io.Writer
-	beginR2 io.Writer
-	EndR1   io.Writer
-	EndR2   io.Writer
-}
-
 type fqBufferedWriter struct {
 	f    *os.File
 	gz   *gzip.Writer
@@ -93,17 +86,17 @@ func splitter(in1 <-chan read, in2 <-chan read, out chan<- pair, n int) {
 	close(out)
 }
 
-func writer(in <-chan pair, w *fqWriter) {
+func writer(in <-chan pair, beginR1, beginR2, EndR1, EndR2 io.Writer) {
 	var wg sync.WaitGroup
 	for p := range in {
 
 		wg.Add(2)
 		if p.begin {
-			go writeRead(p.r1, w.beginR1, &wg)
-			go writeRead(p.r2, w.beginR2, &wg)
+			go writeRead(p.r1, beginR1, &wg)
+			go writeRead(p.r2, beginR2, &wg)
 		} else {
-			go writeRead(p.r1, w.EndR1, &wg)
-			go writeRead(p.r2, w.EndR2, &wg)
+			go writeRead(p.r1, EndR1, &wg)
+			go writeRead(p.r2, EndR2, &wg)
 		}
 		wg.Wait()
 	}
@@ -168,7 +161,6 @@ func newFqBufferedWriter(beginNameR1 string) *fqBufferedWriter {
 }
 
 func split(r1Path, r2Path *string, n *int, beginR1, beginR2, endR1, EndR2 io.Writer) {
-	w := fqWriter{beginR1: beginR1, beginR2: beginR2, EndR1: endR1, EndR2: EndR2}
 	// Running
 	r1 := make(chan read)
 	r2 := make(chan read)
@@ -178,5 +170,5 @@ func split(r1Path, r2Path *string, n *int, beginR1, beginR2, endR1, EndR2 io.Wri
 	go reader(*r2Path, r2)
 	go splitter(r1, r2, pairs, *n)
 
-	writer(pairs, &w)
+	writer(pairs, beginR1, beginR2, endR1, EndR2)
 }
