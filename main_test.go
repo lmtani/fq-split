@@ -14,7 +14,7 @@ func Example_split() {
 	n := 40
 
 	split(&testR1, &testR2, &n, b1, b2, b3, b4)
-	// Output:
+	// unordered Output:
 	//@NDX550345_RUO:57:H5JY2BGXF:4:11506:26494:17984/2
 	//CAAATATATTGTAATCATCACACTCAGCAAACCGGCACTG
 	//+
