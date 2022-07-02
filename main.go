@@ -183,7 +183,7 @@ func main() {
 		log.Fatalln("Need to provide a path for you FASTQ file. It can be paired-end experiment (-r1 and -r2) or single-end (-se)")
 	}
 	if (*r1Path != "" || *r2Path != "") && *sePath != "" {
-		log.Fatalln("You can only use paired-end (by providing -r1 and -r2) ot single-end (-se). Not both.")
+		log.Fatalln("You can only use paired-end (by providing -r1 and -r2) or single-end (-se). Not both.")
 	}
 
 	if *r1Path != "" || *r2Path != "" {
