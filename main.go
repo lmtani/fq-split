@@ -11,12 +11,14 @@ import (
 	"sync"
 )
 
+// read is a single read of sequencing
 type read struct {
 	ID       string
 	sequence string
 	quality  string
 }
 
+// pair is a pair of reads from a paired-end experiment
 type pair struct {
 	begin  bool
 	r1, r2 read
@@ -34,6 +36,7 @@ type fqBufferedWriter struct {
 	buff *bufio.Writer
 }
 
+// reader open FASTQ file and parse its content as read type
 func reader(path string, out chan<- read) {
 	file, err := os.Open(path)
 	if err != nil {
@@ -70,6 +73,7 @@ func reader(path string, out chan<- read) {
 	close(out)
 }
 
+// pairSplitter splits the read sequence - and quality - at the nth position. It works on paired-end reads
 func pairSplitter(in1 <-chan read, in2 <-chan read, out chan<- pair, n int) {
 	for v := range in1 {
 		v2 := <-in2
@@ -92,6 +96,7 @@ func pairSplitter(in1 <-chan read, in2 <-chan read, out chan<- pair, n int) {
 	close(out)
 }
 
+// pairWriter writes the output files for paired-end experiment. It creates 4 output files.
 func pairWriter(in <-chan pair, beginR1, beginR2, EndR1, EndR2 io.Writer) {
 	var wg sync.WaitGroup
 	for p := range in {
@@ -108,6 +113,7 @@ func pairWriter(in <-chan pair, beginR1, beginR2, EndR1, EndR2 io.Writer) {
 	}
 }
 
+// singleSplitter is equivalent to pairSplitter, but for single-end experiment
 func singleSplitter(in1 <-chan read, out chan<- seRead, n int) {
 	for v := range in1 {
 
@@ -126,6 +132,7 @@ func singleSplitter(in1 <-chan read, out chan<- seRead, n int) {
 	close(out)
 }
 
+// singleWriter is equivalent to pairWriter, but for single-end. It creates 2 output files.
 func singleWriter(in <-chan seRead, beginR1, EndR1 io.Writer) {
 	var wg sync.WaitGroup
 	for p := range in {
@@ -140,6 +147,7 @@ func singleWriter(in <-chan seRead, beginR1, EndR1 io.Writer) {
 	}
 }
 
+// writeRead uses the provided io.Writer to output the read, in FASTQ format.
 func writeRead(r read, w io.Writer, wg *sync.WaitGroup) {
 	_, err := w.Write([]byte(fmt.Sprintf("%s\n%s\n+\n%s\n", r.ID, r.sequence, r.quality)))
 	if err != nil {
@@ -167,8 +175,15 @@ func main() {
 	out := flag.String("out", "test-1", "Output basename for the first bases file")
 	flag.Parse()
 
+	// Input validations
 	if *n == 0 {
 		log.Fatalln("Need to provide n greater than 0. Ex: 35")
+	}
+	if *r1Path == "" && *r2Path == "" && *sePath == "" {
+		log.Fatalln("Need to provide a path for you FASTQ file. It can be paired-end experiment (-r1 and -r2) or single-end (-se)")
+	}
+	if (*r1Path != "" || *r2Path != "") && *sePath != "" {
+		log.Fatalln("You can only use paired-end (by providing -r1 and -r2) ot single-end (-se). Not both.")
 	}
 
 	if *r1Path != "" || *r2Path != "" {
@@ -179,6 +194,7 @@ func main() {
 
 }
 
+// handlePaired splits reads from paired-end experiments
 func handlePaired(r1Path *string, r2Path *string, n *int, out *string) {
 	// Initialize writers
 	b1 := newFqBufferedWriter(*out + "_begin_R1.fq.gz")
@@ -194,6 +210,7 @@ func handlePaired(r1Path *string, r2Path *string, n *int, out *string) {
 	b4.buff.Flush()
 }
 
+// handlePairedReads splits reads from single-end experiments
 func handleSingle(r1Path *string, n *int, out *string) {
 	// Initialize writers
 	b1 := newFqBufferedWriter(*out + "_begin_SE.fq.gz")
