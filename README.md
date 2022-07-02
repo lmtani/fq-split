@@ -1,10 +1,22 @@
 # :scissors: fq-split
 
-A utility for splitting paired FASTQ files at the N-th position.
+A utility for splitting FASTQ files at the N-th position. Works on paired and single end sequencing experiments.
+
+## Example
+
+```sh
+# Paired-end:
+fq-split -r1 data/test_r1.fq.gz -r2 data/test_r2.fq.gz -out paired-end-test -n 30
+
+# Single-end:
+fq-split -se data/test_r1.fq.gz -out single-end-test -n 30
+```
+
+> Use `fq-split -h` for more info.
 
 ## Quick introduction
 
-**Note:** your FASTQ files need to be in the same order. For example: if first read from R1 file is the _@aaaa/1_, then the first read from R2 need to be the _@aaaa/2_.
+**Note:** if using paired-end reads your FASTQ files need to be in the same order. For example: if first read from R1 file is the _@aaaa/1_, then the first read from R2 need to be the _@aaaa/2_.
 
 ```sh
 # ----- Inspect input data -----
